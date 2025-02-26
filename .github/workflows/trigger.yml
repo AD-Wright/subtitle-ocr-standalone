@@ -1,0 +1,93 @@
+name: Check for New Tags and Release
+
+on:
+  schedule:
+    # Run once a day at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  check-tags-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need to fetch all history for tags
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Fetch latest tag from external repo
+        id: fetch-external-tag
+        run: |
+          # Get the latest tag from the external repository
+          LATEST_EXTERNAL_TAG=$(curl -s https://api.github.com/repos/gwen-lg/subtile-ocr/tags | jq -r '.[0].name')
+          echo "Latest external tag: $LATEST_EXTERNAL_TAG"
+          echo "LATEST_EXTERNAL_TAG=$LATEST_EXTERNAL_TAG" >> $GITHUB_ENV
+
+      - name: Get current repo's latest tag
+        id: get-latest-tag
+        run: |
+          # Get the latest tag from the current repository
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag in our repo: $LATEST_TAG"
+          echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+      - name: Determine if new tag needed
+        id: determine-new-tag
+        run: |
+          # Store the external tag for tracking
+          STORED_EXTERNAL_TAG=$(cat .external-tag 2>/dev/null || echo "")
+          echo "Stored external tag: $STORED_EXTERNAL_TAG"
+          
+          if [ "$STORED_EXTERNAL_TAG" != "$LATEST_EXTERNAL_TAG" ]; then
+            echo "New tag detected in external repo: $LATEST_EXTERNAL_TAG (was: $STORED_EXTERNAL_TAG)"
+            echo "NEEDS_NEW_TAG=true" >> $GITHUB_ENV
+            
+            # Store the new external tag for future reference
+            echo "$LATEST_EXTERNAL_TAG" > .external-tag
+            
+            # Calculate new version
+            CURRENT_VERSION=${LATEST_TAG#v}
+            IFS='.' read -r -a VERSION_PARTS <<< "$CURRENT_VERSION"
+            
+            MAJOR=${VERSION_PARTS[0]:-0}
+            MINOR=${VERSION_PARTS[1]:-0}
+            PATCH=${VERSION_PARTS[2]:-0}
+            
+            # Increment patch version
+            NEW_PATCH=$((PATCH + 1))
+            NEW_VERSION="v$MAJOR.$MINOR.$NEW_PATCH"
+            
+            echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+            echo "New version will be: $NEW_VERSION"
+          else
+            echo "No new tag in external repo. No action needed."
+            echo "NEEDS_NEW_TAG=false" >> $GITHUB_ENV
+          fi
+
+      - name: Create new tag and push
+        if: env.NEEDS_NEW_TAG == 'true'
+        run: |
+          # Commit the .external-tag file
+          git add .external-tag
+          git commit -m "Update external tag reference to $LATEST_EXTERNAL_TAG"
+          
+          # Create and push new tag
+          git tag -a $NEW_VERSION -m "Release $NEW_VERSION based on external repo tag $LATEST_EXTERNAL_TAG"
+          git push origin $NEW_VERSION
+          git push
+          
+          echo "Created and pushed new tag: $NEW_VERSION"
+
+      - name: Trigger release workflow
+        if: env.NEEDS_NEW_TAG == 'true'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.WORKFLOW_PAT }}
+          event-type: trigger-release
+          client-payload: '{"tag": "${{ env.NEW_VERSION }}"}'
