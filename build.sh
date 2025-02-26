@@ -27,8 +27,8 @@ git clone https://github.com/gwen-lg/subtile-ocr.git
 cd subtile-ocr
 echo `pwd`
 cargo build --release
-cp target/release/subtile-ocr ../../$APPDIR/usr/lib/subtile-ocr/
 cd ../..
+cp /tmp/subtile-ocr/target/release/subtile-ocr $APPDIR/usr/lib/subtile-ocr/
 
 # Copy MKVToolNix binaries
 echo "Copying MKVToolNix binaries..."
