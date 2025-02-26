@@ -89,5 +89,5 @@ jobs:
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.WORKFLOW_PAT }}
-          event-type: trigger-release
+          event-type: trigger-release_on_many
           client-payload: '{"tag": "${{ env.NEW_VERSION }}"}'
