@@ -1,0 +1,87 @@
+name: CI - Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        ubuntu: [20.04, 22.04, 24.04]
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    name: Build on Ubuntu ${{ matrix.ubuntu }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install MKVToolNix
+        run: |
+          sudo apt-get update
+          # Create keyring directory if it doesn't exist (for Ubuntu 20.04 compatibility)
+          sudo mkdir -p /etc/apt/keyrings || sudo mkdir -p /usr/share/keyrings
+          
+          # Handle different keyring locations based on Ubuntu version
+          if [ -d "/etc/apt/keyrings" ]; then
+            sudo wget -O /etc/apt/keyrings/mkvtoolnix.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/mkvtoolnix.gpg] https://mkvtoolnix.download/ubuntu/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mkvtoolnix.list
+          else
+            sudo wget -O /usr/share/keyrings/mkvtoolnix.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
+            echo "deb [signed-by=/usr/share/keyrings/mkvtoolnix.gpg] https://mkvtoolnix.download/ubuntu/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/mkvtoolnix.list
+          fi
+          
+          sudo apt-get update
+          sudo apt-get install -y mkvtoolnix
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential pkg-config clang
+          sudo apt-get install -y libleptonica-dev libtesseract-dev tesseract-ocr libfuse2
+
+      - name: Install Rust Toolchain (Stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Build Script
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Rename Artifact with Ubuntu Version
+        run: |
+          mv SubtitleConverter-x86_64.AppImage SubtitleConverter-ubuntu-${{ matrix.ubuntu }}-x86_64.AppImage
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SubtitleConverter-AppImage-Ubuntu-${{ matrix.ubuntu }}
+          path: SubtitleConverter-ubuntu-${{ matrix.ubuntu }}-x86_64.AppImage
+
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/**/*.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
