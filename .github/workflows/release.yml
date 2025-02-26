@@ -18,10 +18,10 @@ jobs:
       - name: Install MKVToolNix
         run: |
           sudo apt-get update
+          sudo sh -c 'echo "deb https://mkvtoolnix.download/ubuntu/ $(lsb_release -cs) main" >> /etc/apt/sources.list.d/mkvtoolnix.download.list'
           sudo wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
-          sudo sh -c 'echo "deb https://mkvtoolnix.download/ubuntu/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/mkvtoolnix.list'
           sudo apt-get update
-          sudo apt-get install -y mkvtoolnix
+          sudo apt install -y mkvtoolnix
 
       - name: Install Dependencies
         run: |
