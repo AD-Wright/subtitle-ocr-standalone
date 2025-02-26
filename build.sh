@@ -43,9 +43,11 @@ ldd $(which mkvmerge) | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}
 # Copy Tesseract binaries and data
 echo "Copying Tesseract binaries and data..."
 cp $(which tesseract) $APPDIR/usr/lib/tesseract/
+
 # Copy common language data files
-cp /usr/share/tesseract-ocr/5/tessdata/eng.traineddata $APPDIR/usr/share/tessdata/
-cp /usr/share/tesseract-ocr/5/tessdata/osd.traineddata $APPDIR/usr/share/tessdata/
+wget -O $APPDIR/usr/share/tessdata/eng.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/eng.traineddata
+wget -O $APPDIR/usr/share/tessdata/osd.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/osd.traineddata
+
 # Copy required shared libraries
 ldd $(which tesseract) | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' $APPDIR/usr/lib/
 
