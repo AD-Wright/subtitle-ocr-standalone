@@ -4,6 +4,7 @@
 set -e
 
 # Create directory structure
+echo `pwd`
 APPDIR="SubtitleConverterApp"
 mkdir -p $APPDIR/usr/bin
 mkdir -p $APPDIR/usr/lib/mkvtoolnix
@@ -18,6 +19,8 @@ cp mkv-subtitle-converter.sh $APPDIR/usr/bin/mkv-subtitle-converter
 cp wrapper.sh $APPDIR/AppRun
 chmod +x $APPDIR/usr/bin/mkv-subtitle-converter
 chmod +x $APPDIR/AppRun
+
+echo `pwd`
 
 # Build and install subtile-ocr
 echo "Building subtile-ocr..."
