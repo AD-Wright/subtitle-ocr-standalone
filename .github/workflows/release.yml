@@ -1,0 +1,51 @@
+name: CI - Code Checks & Tests
+run-name: Checks Rust code on ${{ github.event_name }}
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install MKVToolNix
+        run: |
+          sudo apt-get update
+          sudo wget -qO - https://mkvtoolnix.download/gpg-pub-moritzbunkus.asc | sudo apt-key add -
+          sudo sh -c 'echo "deb https://mkvtoolnix.download/ubuntu/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/mkvtoolnix.list'
+          sudo apt-get update
+          sudo apt-get install -y mkvtoolnix
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential pkg-config clang
+          sudo apt-get install -y libleptonica-dev libtesseract-dev
+
+      - name: Install Rust Toolchain (Stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Build Script
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SubtitleConverter-AppImage
+          path: SubtitleConverter-x86_64.AppImage
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SubtitleConverter-x86_64.AppImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
