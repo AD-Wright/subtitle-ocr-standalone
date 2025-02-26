@@ -49,6 +49,13 @@ cp /usr/share/tesseract-ocr/5/tessdata/osd.traineddata $APPDIR/usr/share/tessdat
 # Copy required shared libraries
 ldd $(which tesseract) | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' $APPDIR/usr/lib/
 
+# Find and remove libc.so.* from $APPDIR/usr/lib/
+find $APPDIR/usr/lib/ -name "libc.so.*" -exec rm -f {} \;
+
+# Find libc.so.* in the host OS directory and create a symlink
+HOST_LIBC=$(find /usr/lib/x86_64-linux-gnu/ -name "libc.so.*" | head -n 1)
+ln -s $HOST_LIBC $APPDIR/usr/lib/$(basename $HOST_LIBC)
+
 # Create desktop file
 cat > $APPDIR/usr/share/applications/subtitleconverter.desktop << EOF
 [Desktop Entry]
