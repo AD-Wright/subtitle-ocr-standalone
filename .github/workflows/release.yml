@@ -18,7 +18,7 @@ jobs:
       - name: Install MKVToolNix
         run: |
           sudo apt-get update
-          sudo wget -qO - https://mkvtoolnix.download/gpg-pub-moritzbunkus.asc | sudo apt-key add -
+          sudo wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
           sudo sh -c 'echo "deb https://mkvtoolnix.download/ubuntu/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/mkvtoolnix.list'
           sudo apt-get update
           sudo apt-get install -y mkvtoolnix
