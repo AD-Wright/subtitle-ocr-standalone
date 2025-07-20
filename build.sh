@@ -22,6 +22,7 @@ chmod +x $APPDIR/AppRun
 
 REPO_DIR=$(pwd)
 
+# required "sudo apt install libcurl4-openssl-dev libtesseract-dev libleptonica-dev clang" on host
 # Build and install subtile-ocr
 echo "Building subtile-ocr..."
 rm -rfd /tmp/subtile-ocr
@@ -47,6 +48,9 @@ cp $(which tesseract) $APPDIR/usr/lib/tesseract/
 # Copy common language data files
 wget -O $APPDIR/usr/share/tessdata/eng.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/eng.traineddata
 wget -O $APPDIR/usr/share/tessdata/osd.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/osd.traineddata
+wget -O $APPDIR/usr/share/tessdata/fra.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/fra.traineddata
+wget -O $APPDIR/usr/share/tessdata/spa.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/spa.traineddata
+wget -O $APPDIR/usr/share/tessdata/kor.traineddata https://raw.githubusercontent.com/tesseract-ocr/tessdata/refs/heads/main/kor.traineddata
 
 # Copy required shared libraries
 ldd $(which tesseract) | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' $APPDIR/usr/lib/
